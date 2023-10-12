@@ -9,6 +9,14 @@
             "email": "ai2work@yandex.ru"
         }
     ],
+    "autoload": {
+        "psr-4": {
+            "Model\\DataBase\\": "database/",
+            "App\\": "app/",
+            "PostgreSQLTutorial\\": "app/",
+            "App\\Controllers\\": "app/Controllers/"
+        }
+    },
     "require": {
         "slim/slim": "^4.12",
         "slim/psr7": "^1.6",
@@ -16,7 +24,11 @@
         "slim/twig-view": "^3.3",
         "slim/http": "^1.3",
         "slim/php-view": "^3.2",
-        "php-di/php-di": "^7.0"
+        "php-di/php-di": "^7.0",
+        "slim/flash": "^0.4.0",
+        "nesbot/carbon": "^2.71",
+        "guzzlehttp/guzzle": "^7.8",
+        "vlucas/valitron": "^1.4"
     },
     "require-dev": {
         "squizlabs/php_codesniffer": "^3.7"
