@@ -10,11 +10,10 @@ use Slim\Views\PhpRenderer;
 use Slim\Middleware\MethodOverrideMiddleware;
 use DI\Container;
 
-
-
 // Старт PHP сессии
 session_start();
 
+//создание контейнера с двумя компонентами
 $container = new Container();
 $container->set('renderer', function () {
     // Параметром передается базовая директория, в которой будут храниться шаблоны
@@ -24,6 +23,7 @@ $container->set('flash', function() {
     return new \Slim\Flash\Messages();
 });
 
+//создание приложения с  подготовленным контейнером
 $app = AppFactory::createFromContainer($container);
 
 $router = $app->getRouteCollector()->getRouteParser();
@@ -43,9 +43,8 @@ $app->addErrorMiddleware(true, true, true);
 //     return $this->get('renderer')->render($response, 'index.phtml');
 // });
 $app->get('/', function ($request, $response) use ($router) {
-    // $messages = $this->container->get('flash')->getMessages();
-    // $params = ['flash' => $messages];
-    $params = [];
+    $messages = $this->get('flash')->getMessages();
+    $params = ['flashMessages' => $messages];
     $renderer = new PhpRenderer(__DIR__ . '/../templates');
     return $renderer->render($response, 'index.phtml', $params);
 })->setName('home');
@@ -53,7 +52,10 @@ $app->get('/', function ($request, $response) use ($router) {
 
 $app->post('/urls', function ($request, $response) use ($router) {
     sleep(1);
+    //извлекаем из контейнера компонент и добавляем flash сообщение
+    $this->get('flash')->addMessage('success', 'Страница успешно добавлена!');
     return $response->withRedirect($router->urlFor('home'));
+
 })->setName('');
 
 // $container->set('UrlController', function($c) {
