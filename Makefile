@@ -1,6 +1,7 @@
 PORT ?= 8000
+DATABASE_URL?=postgresql://aelitka:mypassword@localhost:5432/mydb
 start:
-	PHP_CLI_SERVER_WORKERS=5 php -S 0.0.0.0:$(PORT) -t public
+	PHP_CLI_SERVER_WORKERS=5 DATABASE_URL=$(DATABASE_URL) php -S 0.0.0.0:$(PORT) -t public
 install:
 	composer install
 validate:

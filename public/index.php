@@ -9,6 +9,9 @@ use Slim\Factory\AppFactory;
 use Slim\Views\PhpRenderer;
 use Slim\Middleware\MethodOverrideMiddleware;
 use DI\Container;
+use PDO;
+
+//use Valitron\Validator;
 
 // Старт PHP сессии
 session_start();
@@ -31,18 +34,31 @@ $router = $app->getRouteCollector()->getRouteParser();
 $app->add(MethodOverrideMiddleware::class);
 $app->addErrorMiddleware(true, true, true);
 
-// $app->get('/', function ($request, $response) {
-//     $response->getBody()->write('Welcome to Slim!');
-//
-//     return $response;
-//     // Благодаря пакету slim/http этот же код можно записать короче
-//     // return $response->write('Welcome to Slim!');
-// });
-//
-// $app->get('/', function ($request, $response) {
-//     return $this->get('renderer')->render($response, 'index.phtml');
-// });
-$app->get('/', function ($request, $response) use ($router) {
+
+//подключение БД
+$databaseUrl = parse_url(getenv('DATABASE_URL'));
+
+//$databaseUrl = parse_url($_ENV['DATABASE_URL']);
+$username = $databaseUrl['user']; // janedoe
+$password = $databaseUrl['pass']; // mypassword
+$host = $databaseUrl['host']; // localhost
+$port = $databaseUrl['port']; // 5432
+$dbName = ltrim($databaseUrl['path'], '/'); // mydb
+
+//формируем dsn для подключения
+$dsn = "pgsql:host=".$host.";port=".$port.";dbname=".$dbName;
+//PDO подключение к базе данных
+$db = new PDO($dsn, $username, $password);
+
+//Подготавливает и выполняет выражение SQL без заполнителей
+$statement = $db->query('SELECT 1');
+//Извлечение всех оставшихся строк результирующего набора
+$result = $statement->fetchAll();
+var_dump($result);
+
+
+$app->get('/', function ($request, $response) use ($databaseUrl, $router) {
+    var_dump($databaseUrl);
     $messages = $this->get('flash')->getMessages();
     $params = ['flashMessages' => $messages];
     $renderer = new PhpRenderer(__DIR__ . '/../templates');
@@ -52,25 +68,14 @@ $app->get('/', function ($request, $response) use ($router) {
 
 $app->post('/urls', function ($request, $response) use ($router) {
     sleep(1);
+
     //извлекаем из контейнера компонент и добавляем flash сообщение
     $this->get('flash')->addMessage('success', 'Страница успешно добавлена!');
     return $response->withRedirect($router->urlFor('home'));
-
+    // $this->get('flash')->addMessage('error', 'Страница уже существует!');
+    // return $response->withRedirect($router->urlFor('home'));
 })->setName('');
 
-// $container->set('UrlController', function($c) {
-//     $view = $c->get("view");
-//     return new UrlController($view);
-// });
 
-
-
-
-// $app->get('/', UrlController::class . ':start');
-// $app->get('/urls', UrlController::class . ':index');
-// $app->get('/urls/{id}', UrlController::class . ':show');
-//
-// $app->post('/', UrlController::class . ':create');
-// $app->post('/urls/{url_id}/checks', UrlCheckController::class . ':create');
 
 $app->run();

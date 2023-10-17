@@ -23,7 +23,7 @@
                     <a class="nav-link active" href="/">Главная</a>
                 </li>
 
-                <li class="nav-item">
+                <li class="nav-item">getparsedbody php
                     <a class="nav-link" href="/urls">Сайты</a>
                 </li>
 
@@ -32,13 +32,17 @@
     </nav>
 </header>
 
-<?php if (!empty($flashMessages)): ?>
+<?php if (!empty($flashMessages['success'])): ?>
     <div class="alert alert-success" role="alert">
         <?= $flashMessages['success'][0]?>
     </div>
-
 <?php endif; ?>
 
+<?php if (!empty($flashMessages['error'])): ?>
+    <div class="alert alert-warning" role="alert">
+        <?= $flashMessages['error'][0]?>
+    </div>
+<?php endif; ?>
 
 <main class="flex-grow-1">
     <div class="container-lg mt-3">
@@ -50,7 +54,7 @@
                 <p class="lead">Бесплатно проверяйте сайты на SEO пригодность</p>
                 <form action="/urls" method="post" class="row" required="">
                     <div class="col-8">
-                        <input type="text" name="url[name]" value="<?= htmlspecialchars($url ?? '') ?>" class="form-control form-control-lg <?= $invalidForm ?? '' ?>" placeholder=".">
+                        <input type="text" name="url[name]" value="<?= htmlspecialchars($url ?? '') ?>" class="form-control form-control-lg <?= $invalidForm ?? '' ?>" placeholder="https://www.example.com">
                         <?php if (isset($errors['name'])) : ?>
                             <div class="invalid-feedback"><?= $errors['name'][0] ?></div>
                         <?php endif ?>
@@ -58,6 +62,7 @@
                     <div class="col-2">
                         <input type="submit" class="btn btn-primary btn-lg ms-3 px-5 text-uppercase mx-3" value="Проверить">
                     </div>
+
 
                 </form>
 
