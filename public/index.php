@@ -1,15 +1,16 @@
 <?php
 
 // Подключение автозагрузки через composer
-require __DIR__ . '/../vendor/autoload.php';
-
+require __DIR__.'/../vendor/autoload.php';
 
 
 use Slim\Factory\AppFactory;
 use Slim\Views\PhpRenderer;
 use Slim\Middleware\MethodOverrideMiddleware;
 use DI\Container;
-use PDO;
+use Carbon\Carbon;
+
+//use PDO;
 
 //use Valitron\Validator;
 
@@ -20,9 +21,9 @@ session_start();
 $container = new Container();
 $container->set('renderer', function () {
     // Параметром передается базовая директория, в которой будут храниться шаблоны
-    return new \Slim\Views\PhpRenderer(__DIR__ . '/../templates');
+    return new \Slim\Views\PhpRenderer(__DIR__.'/../templates');
 });
-$container->set('flash', function() {
+$container->set('flash', function () {
     return new \Slim\Flash\Messages();
 });
 
@@ -35,47 +36,53 @@ $app->add(MethodOverrideMiddleware::class);
 $app->addErrorMiddleware(true, true, true);
 
 
+// Переменные с формы
+$name = $_POST['url[name]'];
+
+
 //подключение БД
 $databaseUrl = parse_url(getenv('DATABASE_URL'));
 
 //$databaseUrl = parse_url($_ENV['DATABASE_URL']);
-$username = $databaseUrl['user']; // janedoe
-$password = $databaseUrl['pass']; // mypassword
-$host = $databaseUrl['host']; // localhost
-$port = $databaseUrl['port']; // 5432
-$dbName = ltrim($databaseUrl['path'], '/'); // mydb
+$username = $databaseUrl['user'];             // janedoe
+$password = $databaseUrl['pass'];             // mypassword
+$host     = $databaseUrl['host'];             // localhost
+$port     = $databaseUrl['port'];             // 5432
+$dbName   = ltrim($databaseUrl['path'], '/'); // mydb
+$db_table = 'urls';                           // Имя Таблицы БД
 
 //формируем dsn для подключения
 $dsn = "pgsql:host=".$host.";port=".$port.";dbname=".$dbName;
 //PDO подключение к базе данных
 $db = new PDO($dsn, $username, $password);
 
-//Подготавливает и выполняет выражение SQL без заполнителей
-$statement = $db->query('SELECT 1');
-//Извлечение всех оставшихся строк результирующего набора
-$result = $statement->fetchAll();
-var_dump($result);
-
 
 $app->get('/', function ($request, $response) use ($databaseUrl, $router) {
     var_dump($databaseUrl);
     $messages = $this->get('flash')->getMessages();
-    $params = ['flashMessages' => $messages];
-    $renderer = new PhpRenderer(__DIR__ . '/../templates');
+    $params   = ['flashMessages' => $messages];
+    $renderer = new PhpRenderer(__DIR__.'/../templates');
+
     return $renderer->render($response, 'index.phtml', $params);
 })->setName('home');
 
 
-$app->post('/urls', function ($request, $response) use ($router) {
-    sleep(1);
+$app->post('/urls', function ($request, $response) use ($db, $router) {
+    $statement = $db->prepare ('INSERT INTO urls (name, created_at) VALUES (:name, :created_at)');
+    $statement->bindValue(':name', $_POST['url']['name'], PDO::PARAM_STR);
+    $statement->bindValue(':created_at', Carbon::now(), PDO::PARAM_STR);
+    $success = $statement->execute();
 
-    //извлекаем из контейнера компонент и добавляем flash сообщение
-    $this->get('flash')->addMessage('success', 'Страница успешно добавлена!');
+    if ($success) {
+        //извлекаем из контейнера компонент и добавляем flash сообщение
+        $this->get('flash')->addMessage('success', 'Страница успешно добавлена!');
+    } else {
+        $this->get('flash')->addMessage('error', 'ошибка вставки!');
+    }
+
+
     return $response->withRedirect($router->urlFor('home'));
-    // $this->get('flash')->addMessage('error', 'Страница уже существует!');
-    // return $response->withRedirect($router->urlFor('home'));
 })->setName('');
-
 
 
 $app->run();
