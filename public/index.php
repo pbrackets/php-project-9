@@ -65,37 +65,33 @@ $app->get('/', function ($request, $response) use ($databaseUrl, $router) {
 
 
 $app->post('/urls', function ($request, $response) use ($db, $router) {
+    //var_dump($_POST);
+    //die();
+    $urlValidator = new Validator($_POST['url']);
+    $urlValidator->rule('required', 'name');
+    //->message('URL не должен быть пустым');
+    $urlValidator->rule('url', 'name');
+    //->message('Некорректный URL');
+    $urlValidator->rule('lengthMax', 'name', 255);
+    //->message('Некорректный URL');
+    if ($urlValidator->validate()) {
+        //$_SESSION['success'] = 'Валидация пройдена';
+        $statement = $db->prepare('INSERT INTO urls (name, created_at) VALUES (:name, :created_at)');
+        $statement->bindValue(':name', $_POST['url']['name'], PDO::PARAM_STR);
+        $statement->bindValue(':created_at', Carbon::now(), PDO::PARAM_STR);
+        $success = $statement->execute();
+        if ($success) {
+            //извлекаем из контейнера компонент и добавляем flash сообщение
+            $this->get('flash')->addMessage('success', 'Страница успешно добавлена!');
 
-    if (!empty($POST)) {
-        $urlValidator = new Validator($_POST);
-        $urlValidator->rule('required', 'name');
-            //->message('URL не должен быть пустым');
-        $urlValidator->rule('url', 'name');
-            //->message('Некорректный URL');
-        $urlValidator->rule('lengthMax', 'name', 255);
-            //->message('Некорректный URL');
-        if ($urlValidator->validate()) {
-            //$_SESSION['success'] = 'Валидация пройдена';
-            $statement = $db->prepare ('INSERT INTO urls (name, created_at) VALUES (:name, :created_at)');
-            $statement->bindValue(':name', $_POST['url']['name'], PDO::PARAM_STR);
-            $statement->bindValue(':created_at', Carbon::now(), PDO::PARAM_STR);
-            $success = $statement->execute();
-            if ($success) {
-                //извлекаем из контейнера компонент и добавляем flash сообщение
-                $this->get('flash')->addMessage('success', 'Страница успешно добавлена!');
-                return $response
-                    ->withHeader($router, '/urls/')
-                    ->withStatus(302);
-            } else {
-                $this->get('flash')->addMessage('errors', 'Некорректный URL');
-                return $response
-                    ->withHeader($router, '/')
-                    ->withStatus(302);
-            }
+            return $response->withRedirect($router->urlFor('home')); // TODO изменить редирект home на urls/id
         } else {
-            $this->get('flash')->addMessage('errors', 'Некорректный URL');
+            $this->get('flash')->addMessage('error', 'Не могу вставить запись в таблицу');
         }
+    } else {
+        $this->get('flash')->addMessage('error', 'Некорректный URL');
     }
+
 
     return $response->withRedirect($router->urlFor('home'));
 })->setName('');
