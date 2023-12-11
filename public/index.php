@@ -54,6 +54,7 @@ $dsn = "pgsql:host=".$host.";port=".$port.";dbname=".$dbName;
 $db = new PDO($dsn, $username, $password);
 
 
+
 $app->get('/', function ($request, $response) use ($databaseUrl, $router) {
     var_dump($databaseUrl);
     $messages = $this->get('flash')->getMessages();
@@ -62,6 +63,44 @@ $app->get('/', function ($request, $response) use ($databaseUrl, $router) {
 
     return $renderer->render($response, 'index.phtml', $params);
 })->setName('home');
+
+$app->get('/urls', function ($request, $response) use ($databaseUrl, $router) {
+    $messages = $this->get('flash')->getMessages();
+    $params   = ['flashMessages' => $messages];
+    $renderer = new PhpRenderer(__DIR__.'/../templates');
+
+    return $renderer->render($response, 'urls.phtml', $params);
+})->setName('url');
+
+
+$app->get('/urls/{id}', function ($request, $response, $args) use ($router, $db) {
+    $id = $args['id'];
+
+    $statement = $db->prepare('SELECT * FROM urls WHERE id = :id');
+    $statement->bindParam(':id', $id, PDO::PARAM_INT);
+    $statement->execute();
+    $data = $statement->fetch();
+
+
+    $statement2 = $db->prepare('SELECT * FROM url_checks  WHERE url_id = :url_id');
+    $statement2->bindParam(':url_id', $id, PDO::PARAM_INT);
+    $statement2->execute();
+    $checks = $statement2->fetchAll();
+
+
+    $messages = $this->get('flash')->getMessages();
+    $params   = ['flashMessages' => $messages, 'urlData' => $data, 'urlChecks' => $checks];
+    $renderer = new PhpRenderer(__DIR__.'/../templates');
+    //$db_conn = pg_connect("$host $dbName $username $password");
+    //$sql = 'SELECT id, name, created_at FROM $db_table WHERE id = $id';
+    //$query = pg_query($url, $sql);
+    //var_dump($query);
+    // if (!$query) {
+    //     die ("Ошибка выполнения запроса");
+    // }
+
+    return $renderer->render($response, 'id.phtml', $params);
+})->setName('id');
 
 
 $app->post('/urls', function ($request, $response) use ($db, $router) {
@@ -83,8 +122,8 @@ $app->post('/urls', function ($request, $response) use ($db, $router) {
         if ($success) {
             //извлекаем из контейнера компонент и добавляем flash сообщение
             $this->get('flash')->addMessage('success', 'Страница успешно добавлена!');
-
-            return $response->withRedirect($router->urlFor('home')); // TODO изменить редирект home на urls/id
+            $lastId = $db->lastInsertId(); //извлекает id последнего добавленного url
+            return $response->withRedirect($router->urlFor('id', ['id' => $lastId])); // TODO изменить редирект home на urls/id
         } else {
             $this->get('flash')->addMessage('error', 'Не могу вставить запись в таблицу');
         }
@@ -95,6 +134,10 @@ $app->post('/urls', function ($request, $response) use ($db, $router) {
 
     return $response->withRedirect($router->urlFor('home'));
 })->setName('');
+
+// $app->post('/urls/{url_id}/checks', function ($request, $response) use ($db, $router) {
+//
+// });
 
 
 $app->run();
