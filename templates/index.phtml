@@ -58,9 +58,9 @@
                     <div class="col-2">
                         <input type="submit" class="btn btn-primary btn-lg ms-3 px-5 text-uppercase mx-3" value="Проверить">
                     </div>
-                    <?php if (!empty($flashMessages['error'])): ?>
-                        <div class="alert alert-warning" role="alert">
-                            <?= $flashMessages['error'][0]?>
+                    <?php if (!empty($flashMessages['errorUrl'])): ?>
+                        <div class="invalid-feedback" role="alert">
+                            <?= $flashMessages['errorUrl'][0]?>
                         </div>
                     <?php endif; ?>
 

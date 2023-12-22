@@ -56,7 +56,6 @@ $db = new PDO($dsn, $username, $password);
 
 
 $app->get('/', function ($request, $response) use ($databaseUrl, $router) {
-    var_dump($databaseUrl);
     $messages = $this->get('flash')->getMessages();
     $params   = ['flashMessages' => $messages];
     $renderer = new PhpRenderer(__DIR__.'/../templates');
@@ -64,9 +63,12 @@ $app->get('/', function ($request, $response) use ($databaseUrl, $router) {
     return $renderer->render($response, 'index.phtml', $params);
 })->setName('home');
 
-$app->get('/urls', function ($request, $response) use ($databaseUrl, $router) {
+$app->get('/urls', function ($request, $response) use ($databaseUrl, $router, $db) {
+    $statement = $db->prepare('SELECT * FROM urls ORDER BY created_at DESC');
+    $statement->execute();
+    $urls = $statement->fetchAll();
     $messages = $this->get('flash')->getMessages();
-    $params   = ['flashMessages' => $messages];
+    $params   = ['flashMessages' => $messages, 'urls' => $urls];
     $renderer = new PhpRenderer(__DIR__.'/../templates');
 
     return $renderer->render($response, 'urls.phtml', $params);
@@ -75,7 +77,6 @@ $app->get('/urls', function ($request, $response) use ($databaseUrl, $router) {
 
 $app->get('/urls/{id}', function ($request, $response, $args) use ($router, $db) {
     $id = $args['id'];
-
     $statement = $db->prepare('SELECT * FROM urls WHERE id = :id');
     $statement->bindParam(':id', $id, PDO::PARAM_INT);
     $statement->execute();
@@ -91,13 +92,6 @@ $app->get('/urls/{id}', function ($request, $response, $args) use ($router, $db)
     $messages = $this->get('flash')->getMessages();
     $params   = ['flashMessages' => $messages, 'urlData' => $data, 'urlChecks' => $checks];
     $renderer = new PhpRenderer(__DIR__.'/../templates');
-    //$db_conn = pg_connect("$host $dbName $username $password");
-    //$sql = 'SELECT id, name, created_at FROM $db_table WHERE id = $id';
-    //$query = pg_query($url, $sql);
-    //var_dump($query);
-    // if (!$query) {
-    //     die ("Ошибка выполнения запроса");
-    // }
 
     return $renderer->render($response, 'id.phtml', $params);
 })->setName('id');
@@ -121,23 +115,53 @@ $app->post('/urls', function ($request, $response) use ($db, $router) {
         $success = $statement->execute();
         if ($success) {
             //извлекаем из контейнера компонент и добавляем flash сообщение
-            $this->get('flash')->addMessage('success', 'Страница успешно добавлена!');
+            $this->get('flash')->addMessage('success', 'Страница успешно добавлена');
             $lastId = $db->lastInsertId(); //извлекает id последнего добавленного url
-            return $response->withRedirect($router->urlFor('id', ['id' => $lastId])); // TODO изменить редирект home на urls/id
+            return $response->withRedirect($router->urlFor('id', ['id' => $lastId]));
         } else {
             $this->get('flash')->addMessage('error', 'Не могу вставить запись в таблицу');
         }
     } else {
-        $this->get('flash')->addMessage('error', 'Некорректный URL');
+        $this->get('flash')->addMessage('errorUrl', 'Некорректный URL');
     }
 
 
     return $response->withRedirect($router->urlFor('home'));
 })->setName('');
 
-// $app->post('/urls/{url_id}/checks', function ($request, $response) use ($db, $router) {
-//
-// });
+$app->post('/urls/{url_id}/checks', function ($request, $response, $args) use ($router, $db) {
+    $id = $args['url_id'];
+    $sql = "INSERT INTO url_checks (
+            url_id, 
+            created_at, 
+            status_code, 
+            h1, 
+            title, 
+            description) 
+            VALUES (:url_id, :created_at, :status_code, :h1, :title, :description)";
+    $stm = $db->prepare($sql);
+    $stm->bindParam(':url_id', $id, PDO::PARAM_INT);
+    $stm->bindValue(':created_at',Carbon::now(), PDO::PARAM_STR);
+    $stm->bindValue(':status_code','302', PDO::PARAM_INT);
+    $stm->bindValue(':h1', '', PDO::PARAM_STR);
+    $stm->bindValue(':title', '', PDO::PARAM_STR);
+    $stm->bindValue(':description', '', PDO::PARAM_STR);
+    $successVerification = $stm->execute();
+    $urlChecks = $stm->fetchAll();
+    if ($successVerification) {
+        $this->get('flash')->addMessage('successVerification', 'Страница успешно проверена');
+
+
+        $messages = $this->get('flash')->getMessages();
+        $params   = ['flashMessages' => $messages, 'urlChecks' => $urlChecks];
+        $renderer = new PhpRenderer(__DIR__.'/../templates');
+
+        return $response->withRedirect($router->urlFor('id', ['id' => $id]));
+    } else {
+        $this->get('flash')->addMessage('errorVerification', 'Произошла ошибка при проверке, не удалось подключиться');
+
+    }
+});
 
 
 $app->run();
