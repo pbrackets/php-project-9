@@ -64,7 +64,15 @@ $app->get('/', function ($request, $response) use ($databaseUrl, $router) {
 })->setName('home');
 
 $app->get('/urls', function ($request, $response) use ($databaseUrl, $router, $db) {
-    $statement = $db->prepare('SELECT * FROM urls ORDER BY created_at DESC');
+    $statement = $db->prepare(
+        'SELECT urls.id,
+                   name,
+                   max(url_checks.created_at) AS last_check_at
+            FROM urls
+                     JOIN url_checks ON urls.id = url_checks.url_id
+            GROUP BY urls.id
+            ORDER BY urls.id DESC;'
+    );
     $statement->execute();
     $urls = $statement->fetchAll();
     $messages = $this->get('flash')->getMessages();
