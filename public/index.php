@@ -10,6 +10,8 @@ use Slim\Middleware\MethodOverrideMiddleware;
 use DI\Container;
 use Carbon\Carbon;
 use Valitron\Validator;
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
 
 // Старт PHP сессии
 session_start();
@@ -54,7 +56,6 @@ $dsn = "pgsql:host=".$host.";port=".$port.";dbname=".$dbName;
 $db = new PDO($dsn, $username, $password);
 
 
-
 $app->get('/', function ($request, $response) use ($databaseUrl, $router) {
     $messages = $this->get('flash')->getMessages();
     $params   = ['flashMessages' => $messages];
@@ -67,14 +68,15 @@ $app->get('/urls', function ($request, $response) use ($databaseUrl, $router, $d
     $statement = $db->prepare(
         'SELECT urls.id,
                    name,
-                   max(url_checks.created_at) AS last_check_at
+                   max(url_checks.created_at) AS last_check_at,
+                   
             FROM urls
                      JOIN url_checks ON urls.id = url_checks.url_id
             GROUP BY urls.id
             ORDER BY urls.id DESC;'
     );
     $statement->execute();
-    $urls = $statement->fetchAll();
+    $urls     = $statement->fetchAll();
     $messages = $this->get('flash')->getMessages();
     $params   = ['flashMessages' => $messages, 'urls' => $urls];
     $renderer = new PhpRenderer(__DIR__.'/../templates');
@@ -84,7 +86,7 @@ $app->get('/urls', function ($request, $response) use ($databaseUrl, $router, $d
 
 
 $app->get('/urls/{id}', function ($request, $response, $args) use ($router, $db) {
-    $id = $args['id'];
+    $id        = $args['id'];
     $statement = $db->prepare('SELECT * FROM urls WHERE id = :id');
     $statement->bindParam(':id', $id, PDO::PARAM_INT);
     $statement->execute();
@@ -125,6 +127,7 @@ $app->post('/urls', function ($request, $response) use ($db, $router) {
             //извлекаем из контейнера компонент и добавляем flash сообщение
             $this->get('flash')->addMessage('success', 'Страница успешно добавлена');
             $lastId = $db->lastInsertId(); //извлекает id последнего добавленного url
+
             return $response->withRedirect($router->urlFor('id', ['id' => $lastId]));
         } else {
             $this->get('flash')->addMessage('error', 'Не могу вставить запись в таблицу');
@@ -139,7 +142,11 @@ $app->post('/urls', function ($request, $response) use ($db, $router) {
 
 $app->post('/urls/{url_id}/checks', function ($request, $response, $args) use ($router, $db) {
     $id = $args['url_id'];
-    $sql = "INSERT INTO url_checks (
+    try {
+        $client              = new GuzzleHttp\Client();
+        $responseFromUrl     = $client->request('GET', 'http://0.0.0.0:800');
+        $statusCode          = $responseFromUrl->getStatusCode();
+        $sql = "INSERT INTO url_checks (
             url_id, 
             created_at, 
             status_code, 
@@ -147,28 +154,20 @@ $app->post('/urls/{url_id}/checks', function ($request, $response, $args) use ($
             title, 
             description) 
             VALUES (:url_id, :created_at, :status_code, :h1, :title, :description)";
-    $stm = $db->prepare($sql);
-    $stm->bindParam(':url_id', $id, PDO::PARAM_INT);
-    $stm->bindValue(':created_at',Carbon::now(), PDO::PARAM_STR);
-    $stm->bindValue(':status_code','302', PDO::PARAM_INT);
-    $stm->bindValue(':h1', '', PDO::PARAM_STR);
-    $stm->bindValue(':title', '', PDO::PARAM_STR);
-    $stm->bindValue(':description', '', PDO::PARAM_STR);
-    $successVerification = $stm->execute();
-    $urlChecks = $stm->fetchAll();
-    if ($successVerification) {
+        $stm = $db->prepare($sql);
+        $stm->bindParam(':url_id', $id, PDO::PARAM_INT);
+        $stm->bindValue(':created_at', Carbon::now(), PDO::PARAM_STR);
+        $stm->bindParam(':status_code', $statusCode, PDO::PARAM_INT);
+        $stm->bindValue(':h1', '', PDO::PARAM_STR);
+        $stm->bindValue(':title', '', PDO::PARAM_STR);
+        $stm->bindValue(':description', '', PDO::PARAM_STR);
+        $stm->execute();
+
         $this->get('flash')->addMessage('successVerification', 'Страница успешно проверена');
-
-
-        $messages = $this->get('flash')->getMessages();
-        $params   = ['flashMessages' => $messages, 'urlChecks' => $urlChecks];
-        $renderer = new PhpRenderer(__DIR__.'/../templates');
-
-        return $response->withRedirect($router->urlFor('id', ['id' => $id]));
-    } else {
-        $this->get('flash')->addMessage('errorVerification', 'Произошла ошибка при проверке, не удалось подключиться');
-
+    } catch (Exception $e) {
+        $this->get('flash')->addMessage('error', 'Произошла ошибка при проверке, не удалось подключиться');
     }
+    return $response->withRedirect($router->urlFor('id', ['id' => $id]));
 });
 
 
