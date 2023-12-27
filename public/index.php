@@ -68,10 +68,9 @@ $app->get('/urls', function ($request, $response) use ($databaseUrl, $router, $d
     $statement = $db->prepare(
         'SELECT urls.id,
                    name,
-                   max(url_checks.created_at) AS last_check_at,
-                   
+                   max(url_checks.created_at) AS last_check_at   
             FROM urls
-                     JOIN url_checks ON urls.id = url_checks.url_id
+                     LEFT JOIN url_checks ON urls.id = url_checks.url_id
             GROUP BY urls.id
             ORDER BY urls.id DESC;'
     );
@@ -142,9 +141,14 @@ $app->post('/urls', function ($request, $response) use ($db, $router) {
 
 $app->post('/urls/{url_id}/checks', function ($request, $response, $args) use ($router, $db) {
     $id = $args['url_id'];
+
+    $statement = $db->prepare("SELECT name FROM urls WHERE id = :id");
+    $statement->execute(['id' => $id]);
+    $urlToCheck = $statement->fetch(\PDO::FETCH_COLUMN);
+    var_dump($urlToCheck);
     try {
         $client              = new GuzzleHttp\Client();
-        $responseFromUrl     = $client->request('GET', 'http://0.0.0.0:800');
+        $responseFromUrl     = $client->request('GET', $urlToCheck);
         $statusCode          = $responseFromUrl->getStatusCode();
         $sql = "INSERT INTO url_checks (
             url_id, 
