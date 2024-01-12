@@ -28,7 +28,8 @@
         "nesbot/carbon": "^2.71",
         "guzzlehttp/guzzle": "^7.0",
         "vlucas/valitron": "^1.4",
-        "ext-pdo": "*"
+        "ext-pdo": "*",
+        "imangazaliev/didom": "^2.0"
     },
     "require-dev": {
         "squizlabs/php_codesniffer": "^3.7"

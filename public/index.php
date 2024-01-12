@@ -11,7 +11,8 @@ use DI\Container;
 use Carbon\Carbon;
 use Valitron\Validator;
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\RequestException;
+use DiDom\Document;
+//use GuzzleHttp\Exception\RequestException;
 
 // Старт PHP сессии
 session_start();
@@ -67,12 +68,16 @@ $app->get('/', function ($request, $response) use ($databaseUrl, $router) {
 $app->get('/urls', function ($request, $response) use ($databaseUrl, $router, $db) {
     $statement = $db->prepare(
         'SELECT urls.id,
-                   name,
-                   max(url_checks.created_at) AS last_check_at   
-            FROM urls
-                     LEFT JOIN url_checks ON urls.id = url_checks.url_id
-            GROUP BY urls.id
-            ORDER BY urls.id DESC;'
+                      name,
+                      url_checks.created_at AS last_check_at,
+                      status_code
+                FROM urls
+                LEFT JOIN url_checks ON (urls.id = url_checks.url_id) AND (url_checks.id IN (
+                    SELECT max(url_checks.id) AS last_check_id
+                    FROM url_checks
+                    GROUP BY url_checks.url_id
+    ))
+;'
     );
     $statement->execute();
     $urls     = $statement->fetchAll();
@@ -147,7 +152,7 @@ $app->post('/urls/{url_id}/checks', function ($request, $response, $args) use ($
     $urlToCheck = $statement->fetch(\PDO::FETCH_COLUMN);
     var_dump($urlToCheck);
     try {
-        $client              = new GuzzleHttp\Client();
+        $client              = new Client();
         $responseFromUrl     = $client->request('GET', $urlToCheck);
         $statusCode          = $responseFromUrl->getStatusCode();
         $sql = "INSERT INTO url_checks (
@@ -159,12 +164,40 @@ $app->post('/urls/{url_id}/checks', function ($request, $response, $args) use ($
             description) 
             VALUES (:url_id, :created_at, :status_code, :h1, :title, :description)";
         $stm = $db->prepare($sql);
+
+        $document = new Document();
+        $h1 = '';
+        $title = '';
+        $description = '';
+        try {
+            $document->loadHtmlFile($urlToCheck);
+
+            $h1HTML = $document->first('h1');
+            if ($h1HTML !== null) {
+                $h1 = $h1HTML->text();
+            }
+
+            $titleHTML = $document->first('title');
+            if ($titleHTML !== null) {
+                $title = $titleHTML->text();
+            }
+
+            $descriptionHTML = $document->first('meta[name=description]');
+            if ($descriptionHTML !== null) {
+                $description = $descriptionHTML->getAttribute('content');
+            }
+        } catch (\Exception $e) {
+            var_dump($e);
+        }
+
+
+
         $stm->bindParam(':url_id', $id, PDO::PARAM_INT);
         $stm->bindValue(':created_at', Carbon::now(), PDO::PARAM_STR);
         $stm->bindParam(':status_code', $statusCode, PDO::PARAM_INT);
-        $stm->bindValue(':h1', '', PDO::PARAM_STR);
-        $stm->bindValue(':title', '', PDO::PARAM_STR);
-        $stm->bindValue(':description', '', PDO::PARAM_STR);
+        $stm->bindParam(':h1', $h1, PDO::PARAM_STR);
+        $stm->bindParam(':title', $title, PDO::PARAM_STR);
+        $stm->bindParam(':description', $description, PDO::PARAM_STR);
         $stm->execute();
 
         $this->get('flash')->addMessage('successVerification', 'Страница успешно проверена');
