@@ -111,7 +111,7 @@ $app->get('/urls/{id}', function ($request, $response, $args) use ($router, $db)
 })->setName('id');
 
 
-$app->post('/urls', function ($request, $response) use ($db, $router) {
+$app->post('/urls', function ($request, $response, $args) use ($db, $router) {
     //var_dump($_POST);
     //die();
     $urlValidator = new Validator($_POST['url']);
@@ -123,6 +123,19 @@ $app->post('/urls', function ($request, $response) use ($db, $router) {
     //->message('Некорректный URL');
     if ($urlValidator->validate()) {
         //$_SESSION['success'] = 'Валидация пройдена';
+
+        //Проверяем, существует ли URL в базе данных
+        $statement = $db->prepare("SELECT id FROM urls WHERE name = :name;");
+        $statement->execute(['name' => $_POST['url']['name']]);
+        $existsId = $statement->fetch(\PDO::FETCH_COLUMN);
+        $this->get('flash')->addMessage('success', 'Страница уже существует');
+        //$existsId = $db->id(); //извлекает id уже существующего url
+
+        return $response->withRedirect($router->urlFor('id', ['id' => $existsId]));
+
+
+        //если адреса нет в бд, то добавляем в бд
+        $id = $args['url_id'];
         $statement = $db->prepare('INSERT INTO urls (name, created_at) VALUES (:name, :created_at)');
         $statement->bindValue(':name', $_POST['url']['name'], PDO::PARAM_STR);
         $statement->bindValue(':created_at', Carbon::now(), PDO::PARAM_STR);
