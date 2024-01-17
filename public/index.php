@@ -113,8 +113,6 @@ $app->get('/urls/{id}', function ($request, $response, $args) use ($router, $db)
 
 
 $app->post('/urls', function ($request, $response) use ($db, $router) {
-    //var_dump($_POST);
-    //die();
     $urlValidator = new Validator($_POST['url']);
     $urlValidator->rule('required', 'name');
     //->message('URL не должен быть пустым');
@@ -166,7 +164,7 @@ $app->post('/urls/{url_id}/checks', function ($request, $response, $args) use ($
     $statement = $db->prepare("SELECT name FROM urls WHERE id = :id");
     $statement->execute(['id' => $id]);
     $urlToCheck = $statement->fetch(\PDO::FETCH_COLUMN);
-    var_dump($urlToCheck);
+
     try {
         $client              = new Client();
         $responseFromUrl     = $client->request('GET', $urlToCheck);
