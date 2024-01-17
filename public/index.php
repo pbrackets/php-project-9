@@ -138,7 +138,7 @@ $app->post('/urls', function ($request, $response, $args) use ($db, $router) {
         }
 
         //если адреса нет в бд, то добавляем в бд
-        $id = $args['url_id'];
+        //$id = $args['url_id'];
         $statement = $db->prepare('INSERT INTO urls (name, created_at) VALUES (:name, :created_at)');
         $statement->bindValue(':name', $_POST['url']['name'], PDO::PARAM_STR);
         $statement->bindValue(':created_at', Carbon::now(), PDO::PARAM_STR);
