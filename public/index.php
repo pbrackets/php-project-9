@@ -112,7 +112,7 @@ $app->get('/urls/{id}', function ($request, $response, $args) use ($router, $db)
 })->setName('id');
 
 
-$app->post('/urls', function ($request, $response, $args) use ($db, $router) {
+$app->post('/urls', function ($request, $response) use ($db, $router) {
     //var_dump($_POST);
     //die();
     $urlValidator = new Validator($_POST['url']);
