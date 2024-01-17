@@ -12,6 +12,7 @@ use Carbon\Carbon;
 use Valitron\Validator;
 use GuzzleHttp\Client;
 use DiDom\Document;
+//use GuzzleHttp\Exception\ConnectException;
 //use GuzzleHttp\Exception\RequestException;
 
 // Старт PHP сессии
@@ -128,11 +129,13 @@ $app->post('/urls', function ($request, $response, $args) use ($db, $router) {
         $statement = $db->prepare("SELECT id FROM urls WHERE name = :name;");
         $statement->execute(['name' => $_POST['url']['name']]);
         $existsId = $statement->fetch(\PDO::FETCH_COLUMN);
-        $this->get('flash')->addMessage('success', 'Страница уже существует');
-        //$existsId = $db->id(); //извлекает id уже существующего url
 
-        return $response->withRedirect($router->urlFor('id', ['id' => $existsId]));
+        if ($existsId) {
+            $this->get('flash')->addMessage('success', 'Страница уже существует');
+            //$existsId = $db->id(); //извлекает id уже существующего url
 
+            return $response->withRedirect($router->urlFor('id', ['id' => $existsId]));
+        }
 
         //если адреса нет в бд, то добавляем в бд
         $id = $args['url_id'];
@@ -199,7 +202,7 @@ $app->post('/urls/{url_id}/checks', function ($request, $response, $args) use ($
             if ($descriptionHTML !== null) {
                 $description = $descriptionHTML->getAttribute('content');
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             var_dump($e);
         }
 
@@ -212,8 +215,8 @@ $app->post('/urls/{url_id}/checks', function ($request, $response, $args) use ($
         $stm->execute();
 
         $this->get('flash')->addMessage('successVerification', 'Страница успешно проверена');
-    } catch (\Exception $e) {
-        $this->get('flash')->addMessage('error', 'Произошла ошибка при проверке, не удалось подключиться');
+    } catch (Exception $e) {
+        $this->get('flash')->addMessage('errorVerification', 'Произошла ошибка при проверке, не удалось подключиться');
     }
     return $response->withRedirect($router->urlFor('id', ['id' => $id]));
 });
