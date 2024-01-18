@@ -205,11 +205,11 @@ $app->post('/urls/{url_id}/checks', function ($request, $response, $args) use ($
         }
 
         $stm->bindParam(':url_id', $id, PDO::PARAM_INT);
-        $stm->bindValue(':created_at', Carbon::now(), PDO::PARAM_STR);
         $stm->bindParam(':status_code', $statusCode, PDO::PARAM_INT);
         $stm->bindParam(':h1', $h1, PDO::PARAM_STR);
         $stm->bindParam(':title', $title, PDO::PARAM_STR);
         $stm->bindParam(':description', $description, PDO::PARAM_STR);
+        $stm->bindValue(':created_at', Carbon::now(), PDO::PARAM_STR);
         $stm->execute();
 
         $this->get('flash')->addMessage('successVerification', 'Страница успешно проверена');
