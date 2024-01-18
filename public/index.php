@@ -210,10 +210,9 @@ $app->post('/urls/{url_id}/checks', function ($request, $response, $args) use ($
         $stm->bindParam(':title', $title, PDO::PARAM_STR);
         $stm->bindParam(':description', $description, PDO::PARAM_STR);
         $stm->bindValue(':created_at', Carbon::now(), PDO::PARAM_STR);
-        $res = $stm->execute();
-        if ($res) {
-            $this->get('flash')->addMessage('successVerification', 'Страница успешно проверена');
-        }
+        $stm->execute();
+
+        $this->get('flash')->addMessage('successVerification', 'Страница успешно проверена');
     } catch (Exception $e) {
         $this->get('flash')->addMessage('errorVerification', 'Произошла ошибка при проверке, не удалось подключиться');
     }
