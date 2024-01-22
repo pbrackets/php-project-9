@@ -116,8 +116,7 @@ $app->post('/urls', function ($request, $response) use ($db, $router) {
     $urlValidator = new Validator($_POST['url']);
     $urlValidator->rule('required', 'name');
     //->message('URL не должен быть пустым');
-    $urlValidator->rule('url', 'name');
-    //->message('Некорректный URL');
+    $urlValidator->rule('url', 'name')->message('Некорректный URL');
     $urlValidator->rule('lengthMax', 'name', 255);
     //->message('Некорректный URL');
     if ($urlValidator->validate()) {
@@ -153,7 +152,6 @@ $app->post('/urls', function ($request, $response) use ($db, $router) {
     } else {
         $this->get('flash')->addMessage('errorUrl', 'Некорректный URL');
     }
-
 
     return $response->withRedirect($router->urlFor('home'));
 })->setName('');

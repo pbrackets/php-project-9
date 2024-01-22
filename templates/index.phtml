@@ -51,18 +51,16 @@
                 <form action="/urls" method="post" class="row" required="">
                     <div class="col-8">
                         <input type="text" name="url[name]" value="<?= htmlspecialchars($url ?? '') ?>" class="form-control form-control-lg <?= $invalidForm ?? '' ?>" placeholder="https://www.example.com">
-                        <?php if (isset($errors['name'])) : ?>
-                            <div class="invalid-feedback"><?= $errors['name'][0] ?></div>
-                        <?php endif ?>
+                        <?php if (!empty($flashMessages['errorUrl'])): ?>
+                            <div class="invalid-feedback" role="alert">
+                                <?= $flashMessages['errorUrl'][0]?>
+                            </div>
+                        <?php endif; ?>
                     </div>
                     <div class="col-2">
                         <input type="submit" class="btn btn-primary btn-lg ms-3 px-5 text-uppercase mx-3" value="Проверить">
                     </div>
-                    <?php if (!empty($flashMessages['errorUrl'])): ?>
-                        <div class="invalid-feedback" role="alert">
-                            <?= $flashMessages['errorUrl'][0]?>
-                        </div>
-                    <?php endif; ?>
+
 
 
                 </form>
