@@ -113,12 +113,14 @@ $app->get('/urls/{id}', function ($request, $response, $args) use ($router, $db)
 
 
 $app->post('/urls', function ($request, $response) use ($db, $router) {
-    $urlValidator = new Validator($_POST['url']);
+    $receivedUrl = $_POST['url'];
+    $urlValidator = new Validator($receivedUrl);
     $urlValidator->rule('required', 'name');
     //->message('URL не должен быть пустым');
     $urlValidator->rule('url', 'name')->message('Некорректный URL');
     $urlValidator->rule('lengthMax', 'name', 255);
     //->message('Некорректный URL');
+    $flashMessages = [];
     if ($urlValidator->validate()) {
         //$_SESSION['success'] = 'Валидация пройдена';
 
@@ -147,13 +149,17 @@ $app->post('/urls', function ($request, $response) use ($db, $router) {
 
             return $response->withRedirect($router->urlFor('id', ['id' => $lastId]));
         } else {
-            $this->get('flash')->addMessage('error', 'Не могу вставить запись в таблицу');
+            $flashMessages =['error' => ['Не могу вставить запись в таблицу']];
         }
     } else {
-        $this->get('flash')->addMessage('errorUrl', 'Некорректный URL');
+        $flashMessages = ['errorUrl' => ['Некорректный URL']];
+
     }
 
-    return $response->withRedirect($router->urlFor('home'));
+    $params   = ['flashMessages' => $flashMessages, 'url' => $receivedUrl['name'], 'invalidForm' => 'is-invalid'];
+    $renderer = new PhpRenderer(__DIR__.'/../templates');
+    return $renderer->render($response, 'index.phtml', $params);
+    //return $response->withRedirect($router->urlFor('home'));
 })->setName('');
 
 $app->post('/urls/{url_id}/checks', function ($request, $response, $args) use ($router, $db) {
