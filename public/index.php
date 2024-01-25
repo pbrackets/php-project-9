@@ -158,7 +158,8 @@ $app->post('/urls', function ($request, $response) use ($db, $router) {
 
     $params   = ['flashMessages' => $flashMessages, 'url' => $receivedUrl['name'], 'invalidForm' => 'is-invalid'];
     $renderer = new PhpRenderer(__DIR__.'/../templates');
-    return $renderer->render($response, 'index.phtml', $params);
+    return $renderer->render($response, 'index.phtml', $params)
+        ->withStatus(422);
     //return $response->withRedirect($router->urlFor('home'));
 })->setName('');
 
