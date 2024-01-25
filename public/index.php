@@ -12,8 +12,6 @@ use Carbon\Carbon;
 use Valitron\Validator;
 use GuzzleHttp\Client;
 use DiDom\Document;
-//use GuzzleHttp\Exception\ConnectException;
-//use GuzzleHttp\Exception\RequestException;
 
 // Старт PHP сессии
 session_start();
@@ -58,7 +56,7 @@ $dsn = "pgsql:host=".$host.";port=".$port.";dbname=".$dbName;
 $db = new PDO($dsn, $username, $password);
 
 
-$app->get('/', function ($request, $response) use ($databaseUrl, $router) {
+$app->get('/', function ($request, $response) {
     $messages = $this->get('flash')->getMessages();
     $params   = ['flashMessages' => $messages];
     $renderer = new PhpRenderer(__DIR__.'/../templates');
@@ -66,7 +64,7 @@ $app->get('/', function ($request, $response) use ($databaseUrl, $router) {
     return $renderer->render($response, 'index.phtml', $params);
 })->setName('home');
 
-$app->get('/urls', function ($request, $response) use ($databaseUrl, $router, $db) {
+$app->get('/urls', function ($request, $response) use ($db) {
     $statement = $db->prepare(
         'SELECT urls.id,
                       name,
@@ -90,7 +88,7 @@ $app->get('/urls', function ($request, $response) use ($databaseUrl, $router, $d
 })->setName('url');
 
 
-$app->get('/urls/{id}', function ($request, $response, $args) use ($router, $db) {
+$app->get('/urls/{id}', function ($request, $response, $args) use ($db) {
     $id        = $args['id'];
     $statement = $db->prepare('SELECT * FROM urls WHERE id = :id');
     $statement->bindParam(':id', $id, PDO::PARAM_INT);
