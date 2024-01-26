@@ -41,7 +41,11 @@ $app->addErrorMiddleware(true, true, true);
 
 
 //подключение БД
-$databaseUrl = parse_url(getenv('DATABASE_URL'));
+$envDbUrl = getenv('DATABASE_URL');
+if ($envDbUrl === false) {
+    die('Отсутствует переменная окружения DATABASE_URL');
+}
+$databaseUrl = parse_url($envDbUrl);
 
 //$databaseUrl = parse_url($_ENV['DATABASE_URL']);
 $username = $databaseUrl['user'];             // janedoe
