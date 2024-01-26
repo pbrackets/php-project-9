@@ -13,6 +13,7 @@ use Valitron\Validator;
 use GuzzleHttp\Client;
 use DiDom\Document;
 
+
 // Старт PHP сессии
 session_start();
 
@@ -189,10 +190,9 @@ $app->post('/urls/{url_id}/checks', function ($request, $response, $args) use ($
         try {
             $document->loadHtmlFile($urlToCheck);
 
-            $h1HTML = $document->first('h1');
-            if ($h1HTML !== null) {
-                $h1 = $h1HTML->text();
-            }
+            $h1HTML = optional($document, fn ($element) => $element->first('h1'));
+            $h1 = optional($h1HTML, fn ($element) => $element->text());
+
 
             $titleHTML = $document->first('title');
             if ($titleHTML !== null) {
