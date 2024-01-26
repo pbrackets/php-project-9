@@ -13,7 +13,6 @@ use Valitron\Validator;
 use GuzzleHttp\Client;
 use DiDom\Document;
 
-
 // Старт PHP сессии
 session_start();
 
@@ -34,10 +33,6 @@ $router = $app->getRouteCollector()->getRouteParser();
 
 $app->add(MethodOverrideMiddleware::class);
 $app->addErrorMiddleware(true, true, true);
-
-
-// Переменные с формы
-//$name = $_POST['url[name]'];
 
 
 //подключение БД
