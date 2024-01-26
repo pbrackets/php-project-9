@@ -150,6 +150,9 @@ $app->post('/urls', function ($request, $response) use ($db, $router) {
             $this->get('flash')->addMessage('success', 'Страница успешно добавлена');
             $lastId = $db->lastInsertId(); //извлекает id последнего добавленного url
 
+            if ($lastId === false) {
+                die('Отсутствуют url');
+            }
             return $response->withRedirect($router->urlFor('id', ['id' => $lastId]));
         } else {
             $flashMessages =['error' => ['Не могу вставить запись в таблицу']];
