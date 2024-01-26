@@ -193,11 +193,9 @@ $app->post('/urls/{url_id}/checks', function ($request, $response, $args) use ($
             $h1HTML = optional($document, fn ($element) => $element->first('h1'));
             $h1 = optional($h1HTML, fn ($element) => $element->text());
 
+            $titleHTML = optional($document, fn ($element) => $element->first('title'));
+            $title = optional($titleHTML,fn ($element) => $element->text());
 
-            $titleHTML = $document->first('title');
-            if ($titleHTML !== null) {
-                $title = $titleHTML->text();
-            }
 
             $descriptionHTML = $document->first('meta[name=description]');
             if ($descriptionHTML !== null) {
